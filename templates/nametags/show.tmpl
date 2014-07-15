@@ -1,0 +1,38 @@
+<div class="page-header">
+    <h1>Nametag</h1>
+</div>
+
+<table class="table table-bordered">
+    <tbody>
+        <tr>
+            <th>電郵 Email</th>
+            <td>{{ .TagInfo.Email }}</td>
+        </tr>
+        <tr>
+            <th>名牌內容 Content</th>
+            <td>{{ .TagInfo.Content }}</td>
+        </tr>
+        <tr>
+            <th>進度 Status</th>
+            <td>
+                {{ if .TagInfo.IsPending }}Pending{{ end }}
+                {{ if .TagInfo.IsPrinted }}Printed{{ end }}
+                {{ if .TagInfo.IsStatusEmpty }}Unknown{{ end }}
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+{{ range .Images }}
+    <img width="300px" class="img-rounded" src="/serve?blobKey={{.BlobKey}}" alt="">
+{{ end }}
+
+<div>
+    <form action="{{ .UploadUrl }}" method="POST" enctype="multipart/form-data">
+        Upload image: <input type="file" name="file"><br>
+        <input type="hidden" name="tag" value="{{ .TagInfo.Id }}">
+        <input class="btn btn-default" type="submit" name="submit" value="Submit">
+    </form>
+</div>
+

@@ -1,0 +1,30 @@
+<div class="page-header">
+    <h1>名牌資料</h1>
+</div>
+
+<table class="table table-bordered">
+    <tbody>
+        <tr>
+            <th>電郵</th>
+            <td>{{ .TagInfo.Email }}</td>
+        </tr>
+        <tr>
+            <th>名牌內容</th>
+            <td>{{ .TagInfo.Content }}</td>
+        </tr>
+        <tr>
+            <th>進度</th>
+            <td>
+                {{ if .TagInfo.IsPending }}等候中{{ end }}
+                {{ if .TagInfo.IsPrinted }}已製作{{ end }}
+                {{ if .TagInfo.IsStatusEmpty }}未知{{ end }}
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h1>成品</h1>
+<hr>
+{{ range .Images }}
+    <img width="300px" class="img-rounded" src="/serve?blobKey={{.BlobKey}}" alt="">
+{{ end }}

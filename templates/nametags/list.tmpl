@@ -1,0 +1,30 @@
+<table class="table">
+    <thead>
+        <tr>
+            <th>Email</th>
+            <th>Name tag content</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .}}
+            <tr>
+                <td><a href="/nametags/{{ .Id }}">{{ .Email }}</a></td>
+                <td><a href="/nametags/{{ .Id }}">{{ .Content }}</a></td>
+                <td><div class="dropdown">
+                    <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown">
+                    Actions
+                    <span class="caret"></span>
+                    </button>
+                    <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu1">
+                        <li role="presentation"><a role="menuitem" tabindex="-1" href="/nametags/{{ .Id }}">Edit (no available)</a></li>
+                        <li role="presentation"><a role="menuitem" tabindex="-1" href="/nametags/{{ .Id }}/notify">Notify pick up</a></li>
+                        <li role="presentation" class="divider"></li>
+                        <li role="presentation"><a role="menuitem" tabindex="-1" href="/nametags/{{ .Id }}/delete">Delete</a></li>
+                    </ul>
+                    </div>
+                </td>
+            </tr>
+        {{end}}
+    </tbody>
+</table>
