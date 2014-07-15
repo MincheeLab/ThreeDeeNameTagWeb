@@ -1,4 +1,4 @@
-application: threednametag
+application: three-dee-name-tag-web
 version: 1
 runtime: go
 api_version: go1
