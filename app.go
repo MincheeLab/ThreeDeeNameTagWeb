@@ -44,9 +44,10 @@ func (self *Nametag) IsStatusEmpty() bool {
 }
 
 type NametagShowData struct {
-	TagInfo   *Nametag
-	UploadUrl *url.URL
-	Images    []Image
+	TagInfo     *Nametag
+	UploadUrl   *url.URL
+	Images      []Image
+	RelatedTags []Nametag
 }
 
 type Image struct {
@@ -207,9 +208,30 @@ func NametagsShowPublic(r render.Render, params martini.Params, w http.ResponseW
 		c.Errorf("%v", err)
 	}
 
+	mtq := datastore.NewQuery("Nametag").Ancestor(getNametagCollectionKey(c)).
+		Filter("Email =", nametag.Email)
+	var nametags []Nametag
+	keys, err := mtq.GetAll(c, &nametags)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	extraTags := make([]Nametag, len(nametags))
+	for i := 0; i < len(nametags); i++ {
+		if nametags[i].Content == nametag.Content {
+			continue
+		}
+		extraTags[i].Id = keys[i].IntID()
+		extraTags[i].Email = nametags[i].Email
+		extraTags[i].Content = nametags[i].Content
+		extraTags[i].CreatedAt = nametags[i].CreatedAt
+		extraTags[i].Status = nametags[i].Status
+	}
+
 	data := NametagShowData{
-		TagInfo: nametag,
-		Images:  images,
+		TagInfo:     nametag,
+		Images:      images,
+		RelatedTags: extraTags,
 	}
 
 	r.HTML(200, "nametags/show_public", data)

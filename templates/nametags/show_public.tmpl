@@ -1,5 +1,5 @@
 <div class="page-header">
-    <h1>名牌資料</h1>
+    <h1>名字鑰匙扣資料</h1>
 </div>
 
 <table class="table table-bordered">
@@ -28,3 +28,15 @@
 {{ range .Images }}
     <img width="300px" class="img-rounded" src="/serve?blobKey={{.BlobKey}}" alt="">
 {{ end }}
+
+<h1>同一電郵登記的名字鑰匙扣</h1>
+<hr>
+<ul>
+    {{ range .RelatedTags }}
+        {{ if .Id }}
+        <li>
+            <a href="/show/{{ .Id }}">{{ .Content }}</a>
+        </li>
+        {{ end }}
+    {{ end }}
+</ul>
