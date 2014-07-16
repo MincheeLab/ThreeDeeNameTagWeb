@@ -113,7 +113,7 @@ func NametagsFind(w http.ResponseWriter, req *http.Request) {
 		Filter("Email =", req.FormValue("email")).
 		Filter("NormalizedContent =", strings.ToLower(req.FormValue("content")))
 	var nametags []Nametag
-	_, err := q.GetAll(c, &nametags)
+	keys, err := q.GetAll(c, &nametags)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -124,7 +124,7 @@ func NametagsFind(w http.ResponseWriter, req *http.Request) {
 		http.Redirect(w, req, "/", http.StatusFound)
 	}
 
-	http.Redirect(w, req, fmt.Sprintf("/show/%s", nametags[0].Id), http.StatusFound)
+	http.Redirect(w, req, fmt.Sprintf("/show/%v", strconv.FormatInt(keys[0].IntID(), 10)), http.StatusFound)
 
 }
 
