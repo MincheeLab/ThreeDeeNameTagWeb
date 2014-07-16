@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/go-martini/martini"
-	"github.com/martini-contrib/auth"
 	"github.com/martini-contrib/render"
 
 	"fmt"
@@ -16,7 +15,8 @@ import (
 	"appengine"
 	"appengine/blobstore"
 	"appengine/datastore"
-	// "appengine/mail"
+	"appengine/mail"
+	"appengine/user"
 )
 
 type Nametag struct {
@@ -53,7 +53,6 @@ type Image struct {
 }
 
 func init() {
-	usr, pw := "admin", "admin"
 	m := martini.Classic()
 	m.Use(render.Renderer(render.Options{
 		Layout: "layout",
@@ -71,21 +70,36 @@ func init() {
 	m.Get("/show/:id", NametagsShowPublic)
 	m.Get("/serve", Serve)
 
-	m.Post("/nametags/:id/upload_image", auth.Basic(usr, pw), NametagUploadImage)
-	m.Get("/nametags/new", auth.Basic(usr, pw), NametagsNew)
-	m.Get("/nametags", auth.Basic(usr, pw), NametagsList)
-	m.Get("/nametags/:id", auth.Basic(usr, pw), NametagsShow)
-	m.Patch("/nametags/:id/notify", auth.Basic(usr, pw), NametagNotify)
+	m.Post("/nametags/:id/upload_image", authorize, NametagUploadImage)
+	m.Get("/nametags/new", authorize, NametagsNew)
+	m.Get("/nametags", authorize, NametagsList)
+	m.Get("/nametags/:id", authorize, NametagsShow)
+	m.Patch("/nametags/:id/notify", authorize, NametagNotify)
 
 	m.Get("/nametags/:id/delete_confirmation", NametagDeleteConfirmation)
 	m.Post("/nametags/:id/delete", NametagDelete)
-	m.Post("/nametags/create", auth.Basic(usr, pw), NametagsCreate)
+	m.Post("/nametags/create", authorize, NametagsCreate)
 
 	m.Get("/pickup_location", func(r render.Render) {
 		r.HTML(200, "pickup_location", "")
 	})
 
 	http.Handle("/", m)
+}
+
+func authorize(w http.ResponseWriter, r *http.Request) {
+	c := appengine.NewContext(r)
+	u := user.Current(c)
+	if u == nil {
+		url, err := user.LoginURL(c, r.URL.String())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Location", url)
+		w.WriteHeader(http.StatusFound)
+		return
+	}
 }
 
 func NametagsNew(r render.Render, res http.ResponseWriter, req *http.Request) {
@@ -256,19 +270,18 @@ const msgText = `
 `
 
 func NametagNotify(params martini.Params, w http.ResponseWriter, r *http.Request) {
-	// c := appengine.NewContext(r)
-	// key, nametag := findOneNametagByParamId(c, w, params["id"])
+	c := appengine.NewContext(r)
+	_, nametag := findOneNametagByParamId(c, w, params["id"])
 
-	// msg := &mail.Message{
-	// 	Sender:  "MincheeLab勉智實驗室 <@example.com>",
-	// 	To:      []string{nametag.Email},
-	// 	Subject: "",
-	// 	Body:    fmt.Sprintf(msgText, url),
-	// }
-	// if err := mail.Send(c, msg); err != nil {
-	// 	c.Errorf("Couldn't send email: %v", err)
-	// }
-
+	msg := &mail.Message{
+		Sender:  "MincheeLab勉智實驗室 <@example.com>",
+		To:      []string{nametag.Email},
+		Subject: "",
+		Body:    fmt.Sprintf(msgText),
+	}
+	if err := mail.Send(c, msg); err != nil {
+		c.Errorf("Couldn't send email: %v", err)
+	}
 }
 
 func NametagDelete(params martini.Params, w http.ResponseWriter, r *http.Request) {
