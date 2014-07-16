@@ -22,6 +22,7 @@ import (
 type Nametag struct {
 	Id                int64
 	Email             string
+	Phone             string
 	Content           string
 	NormalizedContent string
 	Status            string
@@ -153,6 +154,7 @@ func NametagsList(r render.Render, w http.ResponseWriter, req *http.Request) {
 func NametagsCreate(res http.ResponseWriter, req *http.Request) {
 	c := appengine.NewContext(req)
 	nametag := Nametag{
+		Phone:             req.FormValue("phone"),
 		Email:             req.FormValue("email"),
 		Content:           req.FormValue("nametag_content"),
 		NormalizedContent: strings.ToLower(req.FormValue("nametag_content")),
