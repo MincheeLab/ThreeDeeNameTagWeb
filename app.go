@@ -384,7 +384,7 @@ func SendEmailToAll(r *http.Request, w http.ResponseWriter) {
 		emails = append(emails, models[i].Email)
 	}
 
-	for email := range emails {
+	for _, email := range emails {
 		msg := &mail.Message{
 			Sender:  sender,
 			To:      []string{email},
