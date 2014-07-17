@@ -17,6 +17,7 @@
             <td>
                 {{ if .TagInfo.IsPending }}Pending{{ end }}
                 {{ if .TagInfo.IsPrinted }}Printed{{ end }}
+                {{ if .TagInfo.IsNotified }}Notified{{ end }}
                 {{ if .TagInfo.IsStatusEmpty }}Unknown{{ end }}
             </td>
         </tr>

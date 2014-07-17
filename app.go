@@ -384,15 +384,17 @@ func SendEmailToAll(r *http.Request, w http.ResponseWriter) {
 		emails = append(emails, models[i].Email)
 	}
 
-	msg := &mail.Message{
-		Sender:  sender,
-		To:      emails,
-		Subject: "延遲通知－3D打印名字鑰匙扣",
-		Body:    delayMsgText,
-	}
+	for email := range emails {
+		msg := &mail.Message{
+			Sender:  sender,
+			To:      []string{email},
+			Subject: "延遲通知－3D打印名字鑰匙扣",
+			Body:    delayMsgText,
+		}
 
-	if err := mail.Send(c, msg); err != nil {
-		c.Errorf("Couldn't send email: %v", err)
+		if err := mail.Send(c, msg); err != nil {
+			c.Errorf("Couldn't send email: %v", err)
+		}
 	}
 
 	http.Redirect(w, r, "/nametags", http.StatusFound)
