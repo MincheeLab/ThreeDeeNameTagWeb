@@ -17,6 +17,7 @@
             <td>
                 {{ if .TagInfo.IsPending }}等候中{{ end }}
                 {{ if .TagInfo.IsPrinted }}已製作{{ end }}
+                {{ if .TagInfo.IsNotified }}已通知{{ end }}
                 {{ if .TagInfo.IsStatusEmpty }}未知{{ end }}
             </td>
         </tr>
