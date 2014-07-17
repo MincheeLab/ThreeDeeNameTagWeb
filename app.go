@@ -335,7 +335,7 @@ const pickupMsgText = `
 
 `
 
-const sender = "MincheeLab勉智實驗室 <@example.com>"
+const sender = "MincheeLab勉智實驗室 <mincheelab@gmail.com>"
 
 func SendEmailToAll(r *http.Request, w http.ResponseWriter) {
 	c := appengine.NewContext(r)
