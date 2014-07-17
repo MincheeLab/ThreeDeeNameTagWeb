@@ -25,7 +25,7 @@
 
 
 {{ range .Images }}
-    <img width="300px" class="img-rounded" src="/serve?blobKey={{.BlobKey}}" alt="">
+    <img width="300px" class="img-rounded" src="{{ .ServingURL }}" alt="">
 {{ end }}
 
 <div>

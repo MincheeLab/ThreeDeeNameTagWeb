@@ -15,6 +15,7 @@ import (
 	"appengine"
 	"appengine/blobstore"
 	"appengine/datastore"
+	"appengine/image"
 	"appengine/mail"
 	"appengine/user"
 )
@@ -55,7 +56,8 @@ type NametagShowData struct {
 }
 
 type Image struct {
-	BlobKey appengine.BlobKey
+	BlobKey    appengine.BlobKey
+	ServingURL *url.URL `datastore:"-"`
 }
 
 func init() {
@@ -186,6 +188,15 @@ func NametagsShow(r render.Render, params martini.Params, w http.ResponseWriter,
 		c.Errorf("%v", err)
 	}
 
+	options := &image.ServingURLOptions{
+		Size: 500,
+	}
+
+	for i, img := range images {
+		sUrl, _ := image.ServingURL(c, img.BlobKey, options)
+		images[i].ServingURL = sUrl
+	}
+
 	data := NametagShowData{
 		TagInfo:   nametag,
 		UploadUrl: uploadURL,
@@ -224,6 +235,15 @@ func NametagsShowPublic(r render.Render, params martini.Params, w http.ResponseW
 		extraTags[i].Content = nametags[i].Content
 		extraTags[i].CreatedAt = nametags[i].CreatedAt
 		extraTags[i].Status = nametags[i].Status
+	}
+
+	options := &image.ServingURLOptions{
+		Size: 500,
+	}
+
+	for i, img := range images {
+		sUrl, _ := image.ServingURL(c, img.BlobKey, options)
+		images[i].ServingURL = sUrl
 	}
 
 	data := NametagShowData{
@@ -315,6 +335,8 @@ const pickupMsgText = `
 
 `
 
+const sender = "MincheeLab勉智實驗室 <@example.com>"
+
 func SendEmailToAll(r *http.Request, w http.ResponseWriter) {
 	c := appengine.NewContext(r)
 	_, models, err := findAllNametags(c)
@@ -334,9 +356,9 @@ func SendEmailToAll(r *http.Request, w http.ResponseWriter) {
 	}
 
 	msg := &mail.Message{
-		Sender:  "MincheeLab勉智實驗室 <@example.com>",
+		Sender:  sender,
 		To:      emails,
-		Subject: "3D打印名字鑰匙扣會有延遲",
+		Subject: "延遲通知－3D打印名字鑰匙扣",
 		Body:    delayMsgText,
 	}
 
@@ -356,9 +378,9 @@ func NametagNotify(params martini.Params, w http.ResponseWriter, r *http.Request
 	}
 
 	msg := &mail.Message{
-		Sender:  "MincheeLab勉智實驗室 <@example.com>",
+		Sender:  sender,
 		To:      []string{nametag.Email},
-		Subject: "3D打印名字鑰匙扣",
+		Subject: "已完成－3D打印名字鑰匙扣",
 		Body:    fmt.Sprintf(pickupMsgText, "http://nametag.minchee.org/show/"+strconv.FormatInt(key.IntID(), 10)),
 	}
 
