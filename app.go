@@ -323,16 +323,45 @@ MincheeLab
 const pickupMsgText = `
 您好，
 
-歡迎你參加 MincheeLab勉智實驗室 X USJ聖若瑟大學 舉辦的的 "3D打印名牌" 活動。
-你的名牌已打印完成。請到
+歡迎你參加 MincheeLab勉智實驗室 X USJ聖若瑟大學 舉辦的的 "3D打印名字鑰匙扣" 活動。
+你的鑰匙扣已打印完成，
 
-澳門外港新填海區 16號
+點擊這裡查看成品
+%s
+
+然後請到以下地址提取：
+
+澳門外港新填海區 
+倫敦街十六號，三樓
 聖若瑟大學
-電腦部
+電腦部 (IT Office)
 
-提取
-請注意，必須要在電腦部
+請注意，當您到達聖若瑟大學，必須要在電腦部(IT Office)提取
+可參考此網頁，有提供確實位置
+http://nametag.minchee.org/pickup_location
 
+勉智實驗室
+MincheeLab
+
+
+Dear Sir/Madam,
+
+We are excited that you joined “3D Printed Name Keychain” event hosted by “MincheeLab X USJ”. Your keychain is ready for pick up. Please pick it up at:
+
+Visit here to see the keychain
+%s
+
+University of Saint Joseph - IT Office
+Rua de Londres 16, 3rd floor
+NAPE
+Macau, China
+
+Attention ! When you arrive at the University of Saint Joseph, please make sure to go to the IT Office for pick up.
+
+Please visit this website for the exact location of the IT Office
+http://nametag.minchee.org/pickup_location
+
+MincheeLab
 `
 
 const sender = "MincheeLab勉智實驗室 <mincheelab@gmail.com>"
@@ -377,11 +406,13 @@ func NametagNotify(params martini.Params, w http.ResponseWriter, r *http.Request
 		http.Error(w, "Missing message_type", http.StatusInternalServerError)
 	}
 
+	showUrl := "http://nametag.minchee.org/show/" + strconv.FormatInt(key.IntID(), 10)
+
 	msg := &mail.Message{
 		Sender:  sender,
 		To:      []string{nametag.Email},
 		Subject: "已完成－3D打印名字鑰匙扣",
-		Body:    fmt.Sprintf(pickupMsgText, "http://nametag.minchee.org/show/"+strconv.FormatInt(key.IntID(), 10)),
+		Body:    fmt.Sprintf(pickupMsgText, showUrl, showUrl),
 	}
 
 	if err := mail.Send(c, msg); err != nil {
