@@ -75,8 +75,13 @@ func init() {
 	m.Post("/nametags/:id/upload_image", authorize, NametagUploadImage)
 	m.Get("/nametags/new", authorize, NametagsNew)
 	m.Get("/nametags", authorize, NametagsList)
+	m.Get("/nametags/send_email_to_all_confirmation", authorize, func(r render.Render) {
+		r.HTML(200, "nametags/send_email_to_all_confirmation", "")
+	})
+	m.Get("/nametags/send_email_to_all", authorize, SendEmailToAll)
 	m.Get("/nametags/:id", authorize, NametagsShow)
-	m.Patch("/nametags/:id/notify", authorize, NametagNotify)
+	m.Get("/nametags/:id/mark_as", authorize, MarkAs)
+	m.Get("/nametags/:id/notify", authorize, NametagNotify)
 
 	m.Get("/nametags/:id/delete_confirmation", NametagDeleteConfirmation)
 	m.Post("/nametags/:id/delete", NametagDelete)
@@ -131,22 +136,9 @@ func NametagsFind(w http.ResponseWriter, req *http.Request) {
 
 func NametagsList(r render.Render, w http.ResponseWriter, req *http.Request) {
 	c := appengine.NewContext(req)
-
-	q := datastore.NewQuery("Nametag").Ancestor(getNametagCollectionKey(c)).Order("-Email")
-	var nametags []Nametag
-	keys, err := q.GetAll(c, &nametags)
+	_, models, err := findAllNametags(c)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	models := make([]Nametag, len(nametags))
-	for i := 0; i < len(nametags); i++ {
-		models[i].Id = keys[i].IntID()
-		models[i].Email = nametags[i].Email
-		models[i].Content = nametags[i].Content
-		models[i].CreatedAt = nametags[i].CreatedAt
-		models[i].Status = nametags[i].Status
 	}
 
 	r.HTML(200, "nametags/list", models)
@@ -278,7 +270,31 @@ func getNametagCollectionKey(c appengine.Context) *datastore.Key {
 	return datastore.NewKey(c, "NametagCollection", "nametag_collection", 0, nil)
 }
 
-const msgText = `
+const delayMsgText = `
+您好，
+
+歡迎你參加 「MincheeLab勉智實驗室 X USJ聖若瑟大學」 舉辦的的 「3D打印名字鑰匙扣」活動，由於3D打印機需要維護關係，展會後期的鑰匙扣打印有所延遲，敬請見諒。
+
+現時，你可以到這個網站查詢你已提交的3D打印鑰匙扣的打印進度
+http://nametag.minchee.org/
+
+已完成打印鑰匙扣的將會另行電郵通知提取
+
+勉智實驗室
+
+Dear Sir/Madam,
+
+We are excited that you joined the “3D Printed Name Keychain” event hosted by “MincheeLab X USJ”. Due to maintenance to the 3D printer, all requests that have been submitted for pick up after the Macau and Science Technology Week 2014 have been delayed.
+
+Now you can check the status of your keychain printing on the following website: http://nametag.minchee.org/
+
+For those in the keychain printing queue, another email will be sent to you once your keychain is ready for pickup.
+
+MincheeLab
+
+`
+
+const pickupMsgText = `
 您好，
 
 歡迎你參加 MincheeLab勉智實驗室 X USJ聖若瑟大學 舉辦的的 "3D打印名牌" 活動。
@@ -293,19 +309,59 @@ const msgText = `
 
 `
 
+func SendEmailToAll(r *http.Request, w http.ResponseWriter) {
+	c := appengine.NewContext(r)
+	_, models, err := findAllNametags(c)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	var emails []string
+	for i := 0; i < len(models); i++ {
+		for _, email := range emails {
+			if email == models[i].Email {
+				continue
+			}
+		}
+
+		emails = append(emails, models[i].Email)
+	}
+
+	msg := &mail.Message{
+		Sender:  "MincheeLab勉智實驗室 <@example.com>",
+		To:      emails,
+		Subject: "3D打印名字鑰匙扣會有延遲",
+		Body:    delayMsgText,
+	}
+
+	if err := mail.Send(c, msg); err != nil {
+		c.Errorf("Couldn't send email: %v", err)
+	}
+
+	http.Redirect(w, r, "/nametags", http.StatusFound)
+}
+
 func NametagNotify(params martini.Params, w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
-	_, nametag := findOneNametagByParamId(c, w, params["id"])
+	key, nametag := findOneNametagByParamId(c, w, params["id"])
+
+	if r.FormValue("message_type") == "" {
+		http.Error(w, "Missing message_type", http.StatusInternalServerError)
+	}
 
 	msg := &mail.Message{
 		Sender:  "MincheeLab勉智實驗室 <@example.com>",
 		To:      []string{nametag.Email},
-		Subject: "",
-		Body:    fmt.Sprintf(msgText),
+		Subject: "3D打印名字鑰匙扣",
+		Body:    fmt.Sprintf(pickupMsgText, "http://nametag.minchee.org/show/"+strconv.FormatInt(key.IntID(), 10)),
 	}
+
 	if err := mail.Send(c, msg); err != nil {
 		c.Errorf("Couldn't send email: %v", err)
 	}
+
+	UpdateStatus(c, key, nametag, "notified")
+	http.Redirect(w, r, "/nametags", http.StatusFound)
 }
 
 func NametagDelete(params martini.Params, w http.ResponseWriter, r *http.Request) {
@@ -327,6 +383,23 @@ func NametagDeleteConfirmation(r render.Render, params martini.Params, w http.Re
 	r.HTML(200, "nametags/delete_confirmation", data)
 }
 
+func MarkAs(params martini.Params, w http.ResponseWriter, r *http.Request) {
+	c := appengine.NewContext(r)
+	key, nametag := findOneNametagByParamId(c, w, params["id"])
+
+	if r.FormValue("status") == "" {
+		http.Error(w, "No status defined", http.StatusInternalServerError)
+	}
+
+	UpdateStatus(c, key, nametag, r.FormValue("status"))
+	http.Redirect(w, r, "/nametags/", http.StatusFound)
+}
+
+func UpdateStatus(c appengine.Context, key *datastore.Key, nametag *Nametag, status string) {
+	nametag.Status = status
+	datastore.Put(c, key, nametag)
+}
+
 func findOneNametagByParamId(c appengine.Context, w http.ResponseWriter, id string) (*datastore.Key, *Nametag) {
 	intId, _ := strconv.ParseInt(id, 0, 64)
 	key := datastore.NewKey(c, "Nametag", "", intId, getNametagCollectionKey(c))
@@ -336,4 +409,24 @@ func findOneNametagByParamId(c appengine.Context, w http.ResponseWriter, id stri
 		return nil, nil
 	}
 	return key, nametag
+}
+
+func findAllNametags(c appengine.Context) ([]*datastore.Key, []Nametag, error) {
+	q := datastore.NewQuery("Nametag").Ancestor(getNametagCollectionKey(c)).Order("-Email")
+	var nametags []Nametag
+	keys, err := q.GetAll(c, &nametags)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	models := make([]Nametag, len(nametags))
+	for i := 0; i < len(nametags); i++ {
+		models[i].Id = keys[i].IntID()
+		models[i].Email = nametags[i].Email
+		models[i].Content = nametags[i].Content
+		models[i].CreatedAt = nametags[i].CreatedAt
+		models[i].Status = nametags[i].Status
+	}
+
+	return keys, models, err
 }

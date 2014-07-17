@@ -1,4 +1,6 @@
 <a class="btn btn-primary" href="/nametags/new">Add new</a>
+<a class="pull-right btn btn-danger" href="/nametags/send_email_to_all_confirmation">Send Delay Notice (Be careful !)</a>
+
 <table class="table">
     <thead>
         <tr>
@@ -21,7 +23,9 @@
                     </button>
                     <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu1">
                         <li role="presentation"><a role="menuitem" tabindex="-1" href="/nametags/{{ .Id }}">Edit (no available)</a></li>
-                        <li role="presentation"><a role="menuitem" tabindex="-1" href="/nametags/{{ .Id }}/notify">Notify pick up</a></li>
+                        <li role="presentation"><a role="menuitem" tabindex="-1" href="/nametags/{{ .Id }}/notify?message_type=pick_up">Notify pick up</a></li>
+                        <li role="presentation"><a role="menuitem" tabindex="-1" href="/nametags/{{ .Id }}/mark_as?status=printed">Mark as printed</a></li>
+                         <li role="presentation"><a role="menuitem" tabindex="-1" href="/nametags/{{ .Id }}/mark_as?status=pending">Mark as pending</a></li>
                         <li role="presentation" class="divider"></li>
                         <li role="presentation"><a role="menuitem" tabindex="-1" href="/nametags/{{ .Id }}/delete">Delete</a></li>
                     </ul>
