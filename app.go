@@ -39,6 +39,10 @@ func (self *Nametag) IsPrinted() bool {
 	return self.Status == "printed"
 }
 
+func (self *Nametag) IsNotified() bool {
+	return self.Status == "notified"
+}
+
 func (self *Nametag) IsStatusEmpty() bool {
 	return self.Status == ""
 }
@@ -75,9 +79,7 @@ func init() {
 	m.Post("/nametags/:id/upload_image", authorize, NametagUploadImage)
 	m.Get("/nametags/new", authorize, NametagsNew)
 	m.Get("/nametags", authorize, NametagsList)
-	m.Get("/nametags/send_email_to_all_confirmation", authorize, func(r render.Render) {
-		r.HTML(200, "nametags/send_email_to_all_confirmation", "")
-	})
+
 	m.Get("/nametags/send_email_to_all", authorize, SendEmailToAll)
 	m.Get("/nametags/:id", authorize, NametagsShow)
 	m.Get("/nametags/:id/mark_as", authorize, MarkAs)
@@ -86,6 +88,10 @@ func init() {
 	m.Get("/nametags/:id/delete_confirmation", NametagDeleteConfirmation)
 	m.Post("/nametags/:id/delete", NametagDelete)
 	m.Post("/nametags/create", authorize, NametagsCreate)
+
+	m.Get("/nametags/send_email_to_all_confirmation", authorize, func(r render.Render) {
+		r.HTML(200, "nametags/send_email_to_all_confirmation", "")
+	})
 
 	m.Get("/pickup_location", func(r render.Render) {
 		r.HTML(200, "pickup_location", "")
